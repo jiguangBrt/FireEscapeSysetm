@@ -1,6 +1,5 @@
-# main_menu.py
+# main_menu_ui.py
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
 from chessboard import InteractiveChessboard
 
 class MainMenuUI(QtWidgets.QWidget):

@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QStackedWidget
-from main_menu import MainMenuUI
+from main_menu_ui import MainMenuUI
 from floor_plan_editor import FloorPlanEditorUI
 
 
@@ -21,7 +21,7 @@ class InterfaceManager:
 
         # 存储棋盘数据
         self.board_data = None
-        self.board_size = 40
+        self.board_size = 32
 
         # 初始化界面
         self._setup_interfaces()
