@@ -1,9 +1,11 @@
+# floor_plan_editor.py
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox
 from chessboard import InteractiveChessboard
 import numpy as np
 from scipy import ndimage
+import copy
 
 
 class FloorPlanEditorUI(QtWidgets.QWidget):
@@ -224,7 +226,8 @@ class FloorPlanEditorUI(QtWidgets.QWidget):
             if reply == QMessageBox.No:
                 return
 
-        # 存储数据（这里可以添加具体的存储逻辑）
+        # 存储数据到interface_manager
+        self.interface_manager.set_board_data(copy.deepcopy(matrix))
         self._save_floor_plan_data(matrix)
 
         QMessageBox.information(self, '保存成功', '地图数据已成功保存！')
@@ -232,7 +235,17 @@ class FloorPlanEditorUI(QtWidgets.QWidget):
 
     def on_back_clicked(self):
         """返回主菜单"""
+        # 保存当前状态到interface_manager
+        current_matrix = self.chessboard.get_state_matrix()
+        self.interface_manager.set_board_data(copy.deepcopy(current_matrix))
+
         self.interface_manager.show_main_menu()
+
+    def load_board_data(self, matrix):
+        """加载棋盘数据"""
+        if matrix and self.chessboard:
+            self.chessboard.set_board_from_matrix(matrix)
+            print("棋盘数据已加载")
 
     def _check_enclosed_areas(self, matrix):
         """检查是否存在封闭区域"""
@@ -292,7 +305,3 @@ class FloorPlanEditorUI(QtWidgets.QWidget):
 
         print(f"墙体方块数: {wall_count}")
         print(f"出口方块数: {output_count}")
-
-        # 可以在这里添加实际的文件保存代码
-        # with open('floor_plan.json', 'w') as f:
-        #     json.dump({'matrix': matrix, 'timestamp': time.time()}, f)

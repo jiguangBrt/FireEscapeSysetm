@@ -1,7 +1,9 @@
+# chessboard.py (修改部分)
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QBrush, QPen, QColor
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem
+import copy
 
 
 class ChessboardSquare(QGraphicsRectItem):
@@ -173,26 +175,68 @@ class InteractiveChessboard(QtCore.QObject):
 
     def get_state_matrix(self):
         """获取当前状态矩阵"""
-        return self.state_matrix
+        return copy.deepcopy(self.state_matrix)
 
     def clear_board(self):
         """清空棋盘"""
         for row in range(self.size):
             for col in range(self.size):
                 square = self.squares[row][col]
-                if square.is_black:
-                    square.toggle_color()
+                square.set_state(0)
+
+        # 重置状态矩阵
+        self.state_matrix = [[0 for _ in range(self.size)] for _ in range(self.size)]
 
     def set_board_from_matrix(self, matrix):
         """从矩阵设置棋盘状态"""
-        if len(matrix) != self.size or len(matrix[0]) != self.size:
-            print("矩阵大小不匹配")
+        if not matrix or len(matrix) != self.size:
+            print(f"矩阵大小不匹配: 期望 {self.size}x{self.size}")
             return
 
-        for row in range(self.size):
-            for col in range(self.size):
-                square = self.squares[row][col]
-                target_state = matrix[row][col] == 1
+        try:
+            # 更新内部状态矩阵
+            self.state_matrix = copy.deepcopy(matrix)
 
-                if square.is_black != target_state:
-                    square.toggle_color()
+            # 更新每个方块的显示状态
+            for row in range(self.size):
+                if len(matrix[row]) != self.size:
+                    print(f"矩阵行 {row} 大小不匹配: 期望 {self.size}")
+                    continue
+
+                for col in range(self.size):
+                    state = matrix[row][col]
+                    # 验证状态值有效性
+                    if state not in [0, 1, 2]:
+                        print(f"无效状态值 {state} 在位置 ({row}, {col})")
+                        state = 0  # 默认为空地
+
+                    # 更新方块状态
+                    if row < len(self.squares) and col < len(self.squares[row]):
+                        self.squares[row][col].set_state(state)
+
+            print("棋盘状态已从矩阵更新")
+
+        except Exception as e:
+            print(f"设置棋盘状态时出错: {e}")
+
+    def get_board_statistics(self):
+        """获取棋盘统计信息"""
+        wall_count = 0
+        output_count = 0
+        empty_count = 0
+
+        for row in self.state_matrix:
+            for cell in row:
+                if cell == 0:
+                    empty_count += 1
+                elif cell == 1:
+                    wall_count += 1
+                elif cell == 2:
+                    output_count += 1
+
+        return {
+            'empty': empty_count,
+            'wall': wall_count,
+            'output': output_count,
+            'total': self.size * self.size
+        }
