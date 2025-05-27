@@ -1,0 +1,198 @@
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtGui import QBrush, QPen, QColor
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsRectItem
+
+
+class ChessboardSquare(QGraphicsRectItem):
+    """单个棋盘方块类"""
+
+    def __init__(self, x, y, size, row, col, parent_board):
+        super().__init__(x, y, size, size)
+        self.row = row
+        self.col = col
+        self.parent_board = parent_board
+        self.state = 0  # 0=白色空地, 1=黑色墙体, 2=绿色出口
+
+        # 设置清晰的网格样式
+        self.setPen(QPen(QColor(0, 0, 0), 1))  # 黑色边框，1像素宽
+        self.setBrush(QBrush(QColor(255, 255, 255)))  # 白色填充
+
+        # 启用鼠标事件
+        self.setAcceptHoverEvents(True)
+
+    def mousePressEvent(self, event):
+        """鼠标按下事件"""
+        if event.button() == Qt.LeftButton and self.parent_board.is_interactive:
+            self.toggle_state()
+            if self.parent_board.drag_enabled:
+                self.parent_board.is_dragging = True
+                self.parent_board.last_drag_state = self.state
+
+    def hoverEnterEvent(self, event):
+        """鼠标进入事件 - 用于拖拽绘制"""
+        if (self.parent_board.is_dragging and
+                self.parent_board.is_interactive and
+                self.parent_board.drag_enabled):
+            target_state = self.parent_board.last_drag_state
+            if self.state != target_state:
+                self.set_state(target_state)
+
+    def toggle_state(self):
+        """切换方块状态"""
+        if self.parent_board.edit_mode == "wall":
+            # 墙体编辑模式：在白色(0)和黑色(1)之间切换
+            self.state = 1 if self.state == 0 else 0
+        elif self.parent_board.edit_mode == "output":
+            # 出口编辑模式：在白色(0)和绿色(2)之间切换
+            self.state = 2 if self.state == 0 else 0
+
+        self.update_appearance()
+        self.parent_board.update_state_matrix(self.row, self.col, self.state)
+
+    def set_state(self, state):
+        """设置方块状态"""
+        self.state = state
+        self.update_appearance()
+        self.parent_board.update_state_matrix(self.row, self.col, self.state)
+
+    def update_appearance(self):
+        """更新方块外观"""
+        if self.state == 0:
+            # 白色空地
+            self.setBrush(QBrush(QColor(255, 255, 255)))
+        elif self.state == 1:
+            # 黑色墙体
+            self.setBrush(QBrush(QColor(0, 0, 0)))
+        elif self.state == 2:
+            # 绿色出口
+            self.setBrush(QBrush(QColor(0, 255, 0)))
+
+        # 保持黑色边框以显示网格
+        self.setPen(QPen(QColor(0, 0, 0), 1))
+
+
+class InteractiveChessboard(QtCore.QObject):
+    """交互式棋盘类"""
+
+    def __init__(self, graphics_view, size=50):
+        super().__init__()
+        self.graphics_view = graphics_view
+        self.size = size
+        view_size = 500
+        self.square_size = view_size // size
+
+        # 交互控制
+        self.is_interactive = True
+        self.drag_enabled = True
+        self.is_dragging = False
+        self.last_drag_state = 0
+        self.edit_mode = "wall"  # "wall" 或 "output"
+
+        # 初始化状态矩阵 (0=空地, 1=墙体, 2=出口)
+        self.state_matrix = [[0 for _ in range(size)] for _ in range(size)]
+
+        # 创建场景
+        self.scene = QGraphicsScene()
+        self.graphics_view.setScene(self.scene)
+
+        # 存储所有方块
+        self.squares = []
+
+        self.create_chessboard()
+        self.setup_mouse_events()
+
+    def create_chessboard(self):
+        """创建棋盘"""
+        self.squares = []
+
+        for row in range(self.size):
+            square_row = []
+            for col in range(self.size):
+                x = col * self.square_size
+                y = row * self.square_size
+
+                square = ChessboardSquare(x, y, self.square_size, row, col, self)
+                self.scene.addItem(square)
+                square_row.append(square)
+
+            self.squares.append(square_row)
+
+        # 设置场景大小
+        board_size = self.size * self.square_size
+        self.scene.setSceneRect(0, 0, board_size, board_size)
+
+        # 设置视图属性
+        self.graphics_view.setRenderHint(QtGui.QPainter.Antialiasing, False)
+        self.graphics_view.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+        self.graphics_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphics_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphics_view.resetTransform()
+        self.graphics_view.scale(1.0, 1.0)
+
+    def setup_mouse_events(self):
+        """设置鼠标事件"""
+        self.graphics_view.installEventFilter(self)
+        self.graphics_view.viewport().installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        """事件过滤器"""
+        if not self.is_interactive or not self.drag_enabled:
+            return super().eventFilter(obj, event)
+
+        if event.type() == QtCore.QEvent.MouseButtonRelease:
+            if event.button() == Qt.LeftButton:
+                self.is_dragging = False
+                return True
+        elif event.type() == QtCore.QEvent.MouseMove and self.is_dragging:
+            pos = self.graphics_view.mapToScene(event.pos())
+            item = self.scene.itemAt(pos, self.graphics_view.transform())
+            if isinstance(item, ChessboardSquare):
+                target_state = self.last_drag_state
+                if item.state != target_state:
+                    item.set_state(target_state)
+            return True
+        return super().eventFilter(obj, event)
+
+    def set_interactive(self, interactive):
+        """设置是否允许交互"""
+        self.is_interactive = interactive
+
+    def set_edit_mode(self, mode):
+        """设置编辑模式"""
+        self.edit_mode = mode
+
+    def set_drag_enabled(self, enabled):
+        """设置是否启用拖拽"""
+        self.drag_enabled = enabled
+
+    def update_state_matrix(self, row, col, state):
+        """更新状态矩阵"""
+        if 0 <= row < self.size and 0 <= col < self.size:
+            self.state_matrix[row][col] = state
+
+    def get_state_matrix(self):
+        """获取当前状态矩阵"""
+        return self.state_matrix
+
+    def clear_board(self):
+        """清空棋盘"""
+        for row in range(self.size):
+            for col in range(self.size):
+                square = self.squares[row][col]
+                if square.is_black:
+                    square.toggle_color()
+
+    def set_board_from_matrix(self, matrix):
+        """从矩阵设置棋盘状态"""
+        if len(matrix) != self.size or len(matrix[0]) != self.size:
+            print("矩阵大小不匹配")
+            return
+
+        for row in range(self.size):
+            for col in range(self.size):
+                square = self.squares[row][col]
+                target_state = matrix[row][col] == 1
+
+                if square.is_black != target_state:
+                    square.toggle_color()
