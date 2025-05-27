@@ -21,7 +21,7 @@ class InterfaceManager:
 
         # 存储棋盘数据
         self.board_data = None
-        self.board_size = 50
+        self.board_size = 40
 
         # 初始化界面
         self._setup_interfaces()
@@ -37,7 +37,7 @@ class InterfaceManager:
         self.stacked_widget.addWidget(self.interfaces['floor_plan_editor'])
 
         # 默认显示主菜单
-        self.show_main_menu()
+        #self.show_main_menu()
 
     def show_main_menu(self):
         """显示主菜单"""
@@ -50,6 +50,8 @@ class InterfaceManager:
         # 更新主菜单中的棋盘显示
         if self.board_data:
             self.interfaces['main_menu'].update_board_display(self.board_data)
+
+
 
     def show_floor_plan_editor(self):
         """显示地图编辑界面"""
@@ -72,7 +74,6 @@ class InterfaceManager:
             editor = self.interfaces['floor_plan_editor']
             if hasattr(editor, 'chessboard'):
                 self.board_data = editor.chessboard.get_state_matrix()
-                print("棋盘数据已保存")
 
     def get_board_data(self):
         """获取棋盘数据"""

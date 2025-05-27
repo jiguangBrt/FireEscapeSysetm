@@ -77,7 +77,7 @@ class ChessboardSquare(QGraphicsRectItem):
 class InteractiveChessboard(QtCore.QObject):
     """交互式棋盘类"""
 
-    def __init__(self, graphics_view, size=50):
+    def __init__(self, graphics_view, size=32):
         super().__init__()
         self.graphics_view = graphics_view
         self.size = size

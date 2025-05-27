@@ -40,7 +40,7 @@ class MainMenuUI(QtWidgets.QWidget):
         self.graphics_view.setGeometry(QtCore.QRect(40, 140, 500, 500))
 
         # 创建静态网格显示
-        self.chessboard = InteractiveChessboard(self.graphics_view, size=50)
+        self.chessboard = InteractiveChessboard(self.graphics_view, size=32)
         # 禁用交互
         self.chessboard.set_interactive(False)
 

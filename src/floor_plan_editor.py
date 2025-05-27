@@ -1,4 +1,3 @@
-# floor_plan_editor.py
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox
@@ -46,7 +45,7 @@ class FloorPlanEditorUI(QtWidgets.QWidget):
         self.graphics_view.setGeometry(QtCore.QRect(40, 140, 500, 500))
 
         # 创建交互式棋盘
-        self.chessboard = InteractiveChessboard(self.graphics_view, size=50)
+        self.chessboard = InteractiveChessboard(self.graphics_view, size=32)
         # 初始状态下禁用交互，等待用户选择模式
         self.chessboard.set_interactive(False)
 
