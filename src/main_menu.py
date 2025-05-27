@@ -1,7 +1,7 @@
+# main_menu.py
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from chessboard import InteractiveChessboard
-
 
 class MainMenuUI(QtWidgets.QWidget):
     """主菜单界面"""
@@ -110,3 +110,12 @@ class MainMenuUI(QtWidgets.QWidget):
     def on_start_simulation_clicked(self):
         """点击开始仿真按钮"""
         print("开始仿真功能待实现")
+        matrix = self.chessboard.get_state_matrix()
+        print("当前棋盘状态:")
+        print(matrix)
+
+    def update_board_display(self, matrix):
+        """更新棋盘显示"""
+        if matrix and self.chessboard:
+            self.chessboard.set_board_from_matrix(matrix)
+            print("主菜单棋盘显示已更新")
