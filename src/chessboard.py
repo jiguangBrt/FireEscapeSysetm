@@ -14,7 +14,7 @@ class ChessboardSquare(QGraphicsRectItem):
         self.row = row
         self.col = col
         self.parent_board = parent_board
-        self.state = 0  # 0=白色空地, 1=黑色墙体, 2=绿色出口
+        self.state = 0  # 0=白色空地, 1=黑色墙体, 2=绿色出口, 3=逃生起始点
 
         # 设置清晰的网格样式
         self.setPen(QPen(QColor(0, 0, 0), 1))  # 黑色边框，1像素宽
@@ -26,7 +26,7 @@ class ChessboardSquare(QGraphicsRectItem):
     def mousePressEvent(self, event):
         """鼠标按下事件"""
         if event.button() == Qt.LeftButton and self.parent_board.is_interactive:
-            self.toggle_state()
+            self.change_state()
             if self.parent_board.drag_enabled:
                 self.parent_board.is_dragging = True
                 self.parent_board.last_drag_state = self.state
@@ -40,7 +40,7 @@ class ChessboardSquare(QGraphicsRectItem):
             if self.state != target_state:
                 self.set_state(target_state)
 
-    def toggle_state(self):
+    def change_state(self):
         """切换方块状态"""
         if self.parent_board.edit_mode == "wall":
             # 墙体编辑模式：在白色(0)和黑色(1)之间切换
@@ -48,6 +48,9 @@ class ChessboardSquare(QGraphicsRectItem):
         elif self.parent_board.edit_mode == "output":
             # 出口编辑模式：在白色(0)和绿色(2)之间切换
             self.state = 2 if self.state == 0 else 0
+        elif self.parent_board.edit_mode == "start":
+            # 出口编辑模式：在白色(0)和绿色(2)之间切换
+            self.state = 3 if self.state == 0 else 0
 
         self.update_appearance()
         self.parent_board.update_state_matrix(self.row, self.col, self.state)
