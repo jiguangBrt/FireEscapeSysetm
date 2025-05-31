@@ -398,7 +398,7 @@ class FireSimulationUI(QtWidgets.QWidget):
     def _mock_calculate_fire_risk(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[List[List[float]]]:
         """模拟风险计算函数（实际使用时替换为真实函数）"""
         rows, cols = len(matrix), len(matrix[0])
-        time_steps = 50  # 假设20个时间步
+        time_steps = 64  # 假设20个时间步
 
         risk_data = []
         start_row, start_col = start_point
@@ -469,7 +469,7 @@ class FireSimulationUI(QtWidgets.QWidget):
         return self._simple_pathfinding(matrix, start_point)
 
     def _mock_algorithm2_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
-        """模拟算法2（Dijkstra）"""
+        """模拟算法2（UCS）"""
         return self._simple_pathfinding(matrix, start_point)
 
     def _mock_algorithm3_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
@@ -615,7 +615,7 @@ class FireSimulationUI(QtWidgets.QWidget):
             'current_time_step': self.current_time_step,
             'max_time_steps': self.max_time_steps
         }
-        self.interface_manager.set_simulation_data(simulation_data)
+        #self.interface_manager.set_simulation_data(simulation_data)
 
         self.interface_manager.set_board_data(copy.deepcopy(current_matrix))
 
