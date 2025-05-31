@@ -103,14 +103,11 @@ class MainMenuUI(QtWidgets.QWidget):
 
     def on_draw_floor_plan_clicked(self):
         """点击绘制地图按钮"""
-        self.interface_manager.show_floor_plan_editor()
+        self.interface_manager.show_floor_plan_editor_ui()
 
     def on_start_simulation_clicked(self):
         """点击开始仿真按钮"""
-        print("开始仿真功能待实现")
-        matrix = self.chessboard.get_state_matrix()
-        print("当前棋盘状态:")
-        print(matrix)
+        self.interface_manager.show_fire_simulation_ui()
 
     def update_board_display(self, matrix):
         """更新棋盘显示"""

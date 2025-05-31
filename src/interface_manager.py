@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QStackedWidget
 from main_menu_ui import MainMenuUI
 from floor_plan_editor_ui import FloorPlanEditorUI
-#from fire_simulation_ui import FireSimulationUI
+from fire_simulation_ui import FireSimulationUI
 
 class InterfaceManager:
     """界面管理器 - 控制不同界面之间的切换"""
@@ -37,8 +37,8 @@ class InterfaceManager:
         self.stacked_widget.addWidget(self.interfaces['floor_plan_editor'])
 
         # 火灾模拟界面
-        # self.interfaces['fire_simulation'] = FireSimulationUI(self)
-        # self.stacked_widget.addWidget(self.interfaces['fire_simulation'])
+        self.interfaces['fire_simulation'] = FireSimulationUI(self)
+        self.stacked_widget.addWidget(self.interfaces['fire_simulation'])
 
         # 默认显示主菜单
         #self.show_main_menu()
@@ -54,7 +54,7 @@ class InterfaceManager:
         if self.board_data:
             self.interfaces['main_menu'].update_board_display(self.board_data)
 
-    def show_floor_plan_editor(self):
+    def show_floor_plan_editor_ui(self):
         """显示地图编辑界面"""
         self._switch_interface('floor_plan_editor')
 
@@ -62,7 +62,7 @@ class InterfaceManager:
         if self.board_data:
             self.interfaces['floor_plan_editor'].load_board_data(self.board_data)
 
-    def show_fire_simulation(self):
+    def show_fire_simulation_ui(self):
         """显示火灾模拟界面"""
         self._switch_interface('fire_simulation')
 
