@@ -1,4 +1,3 @@
-# chessboard.py (修改部分)
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QBrush, QPen, QColor
@@ -49,7 +48,7 @@ class ChessboardSquare(QGraphicsRectItem):
             # 出口编辑模式：在白色(0)和绿色(2)之间切换
             self.state = 2 if self.state == 0 else 0
         elif self.parent_board.edit_mode == "start":
-            # 出口编辑模式：在白色(0)和绿色(2)之间切换
+            # 逃生起点编辑模式：在白色(0)和粉色(3)之间切换
             self.state = 3 if self.state == 0 else 0
 
         self.update_appearance()
@@ -72,6 +71,9 @@ class ChessboardSquare(QGraphicsRectItem):
         elif self.state == 2:
             # 绿色出口
             self.setBrush(QBrush(QColor(0, 255, 0)))
+        elif self.state == 2:
+            # 粉色出口
+            self.setBrush(QBrush(QColor(255, 0, 255)))
 
         # 保持黑色边框以显示网格
         self.setPen(QPen(QColor(0, 0, 0), 1))
@@ -92,9 +94,9 @@ class InteractiveChessboard(QtCore.QObject):
         self.drag_enabled = True
         self.is_dragging = False
         self.last_drag_state = 0
-        self.edit_mode = "wall"  # "wall" 或 "output"
+        self.edit_mode = "wall"  # "wall" 或 "output" 或 input
 
-        # 初始化状态矩阵 (0=空地, 1=墙体, 2=出口)
+        # 初始化状态矩阵 (0=空地, 1=墙体, 2=出口, 3=逃生起始点)
         self.state_matrix = [[0 for _ in range(size)] for _ in range(size)]
 
         # 创建场景

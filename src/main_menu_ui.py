@@ -1,4 +1,3 @@
-# main_menu_ui.py
 from PyQt5 import QtCore, QtGui, QtWidgets
 from chessboard import InteractiveChessboard
 
