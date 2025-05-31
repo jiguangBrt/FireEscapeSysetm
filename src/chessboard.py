@@ -24,20 +24,43 @@ class ChessboardSquare(QGraphicsRectItem):
 
     def mousePressEvent(self, event):
         """鼠标按下事件"""
-        if event.button() == Qt.LeftButton and self.parent_board.is_interactive:
-            self.change_state()
-            if self.parent_board.drag_enabled:
-                self.parent_board.is_dragging = True
-                self.parent_board.last_drag_state = self.state
+        if self.parent_board.is_interactive:
+            if event.button() == Qt.LeftButton:
+                # 左键：添加当前编辑模式的元素
+                self.add_element()
+                if self.parent_board.drag_enabled:
+                    self.parent_board.is_dragging = True
+                    self.parent_board.drag_mode = "add"
+            elif event.button() == Qt.RightButton:
+                # 右键：删除元素（设为空地）
+                self.remove_element()
+                if self.parent_board.drag_enabled:
+                    self.parent_board.is_dragging = True
+                    self.parent_board.drag_mode = "remove"
 
     def hoverEnterEvent(self, event):
-        """鼠标进入事件 - 用于拖拽绘制"""
+        """鼠标进入事件 - 用于拖拽编辑"""
         if (self.parent_board.is_dragging and
                 self.parent_board.is_interactive and
                 self.parent_board.drag_enabled):
-            target_state = self.parent_board.last_drag_state
-            if self.state != target_state:
-                self.set_state(target_state)
+            if self.parent_board.drag_mode == "add":
+                self.add_element()
+            elif self.parent_board.drag_mode == "remove":
+                self.remove_element()
+
+    def add_element(self):
+        """添加当前编辑模式的元素"""
+        if self.parent_board.edit_mode == "wall":
+            if self.state != 1:  # 如果不是墙体，则设为墙体
+                self.set_state(1)
+        elif self.parent_board.edit_mode == "output":
+            if self.state != 2:  # 如果不是出口，则设为出口
+                self.set_state(2)
+
+    def remove_element(self):
+        """删除元素（设为空地）"""
+        if self.state != 0:  # 如果不是空地，则设为空地
+            self.set_state(0)
 
     def change_state(self):
         """切换方块状态"""
@@ -71,8 +94,8 @@ class ChessboardSquare(QGraphicsRectItem):
         elif self.state == 2:
             # 绿色出口
             self.setBrush(QBrush(QColor(0, 255, 0)))
-        elif self.state == 2:
-            # 粉色出口
+        elif self.state == 3:
+            # 粉色逃生起始点
             self.setBrush(QBrush(QColor(255, 0, 255)))
 
         # 保持黑色边框以显示网格
@@ -93,8 +116,9 @@ class InteractiveChessboard(QtCore.QObject):
         self.is_interactive = True
         self.drag_enabled = True
         self.is_dragging = False
-        self.last_drag_state = 0
-        self.edit_mode = "wall"  # "wall" 或 "output" 或 input
+        self.drag_mode = "add"  # "add" 或 "remove"
+        self.edit_mode = "wall"  # "wall" 或 "output"
+
 
         # 初始化状态矩阵 (0=空地, 1=墙体, 2=出口, 3=逃生起始点)
         self.state_matrix = [[0 for _ in range(size)] for _ in range(size)]
@@ -148,16 +172,17 @@ class InteractiveChessboard(QtCore.QObject):
             return super().eventFilter(obj, event)
 
         if event.type() == QtCore.QEvent.MouseButtonRelease:
-            if event.button() == Qt.LeftButton:
+            if event.button() in [Qt.LeftButton, Qt.RightButton]:
                 self.is_dragging = False
                 return True
         elif event.type() == QtCore.QEvent.MouseMove and self.is_dragging:
             pos = self.graphics_view.mapToScene(event.pos())
             item = self.scene.itemAt(pos, self.graphics_view.transform())
             if isinstance(item, ChessboardSquare):
-                target_state = self.last_drag_state
-                if item.state != target_state:
-                    item.set_state(target_state)
+                if self.drag_mode == "add":
+                    item.add_element()
+                elif self.drag_mode == "remove":
+                    item.remove_element()
             return True
         return super().eventFilter(obj, event)
 

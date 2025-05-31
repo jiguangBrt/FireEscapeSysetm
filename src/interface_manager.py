@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QStackedWidget
 from main_menu_ui import MainMenuUI
-from floor_plan_editor import FloorPlanEditorUI
+from floor_plan_editor_ui import FloorPlanEditorUI
 #from fire_simulation_ui import FireSimulationUI
 
 class InterfaceManager:

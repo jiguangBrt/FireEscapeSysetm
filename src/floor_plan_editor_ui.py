@@ -48,6 +48,24 @@ class FloorPlanEditorUI(QtWidgets.QWidget):
         # 初始状态下禁用交互，等待用户选择模式
         self.chessboard.set_interactive(False)
 
+        # 创建提示框
+        self.lb_tips = QtWidgets.QLabel(self)
+        self.lb_tips.setGeometry(QtCore.QRect(610, 200, 280, 120))
+        self.lb_tips.setStyleSheet("""
+            QLabel {
+                background-color: rgba(0, 255, 255, 64);
+                border: 1px solid rgba(0, 255, 255, 64);
+                border-radius: 12px;
+                color: white;
+                padding: 15px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+        """)
+        self.lb_tips.setText("对墙体和出口的编辑，左键摁住或拖动为增加，右键摁住或拖动为删除")
+        self.lb_tips.setWordWrap(True)
+        self.lb_tips.setAlignment(QtCore.Qt.AlignCenter)
+
         # 按钮样式
         button_style_base = """
             QPushButton {{
@@ -64,24 +82,24 @@ class FloorPlanEditorUI(QtWidgets.QWidget):
 
         # Edit Wall 按钮
         self.btn_edit_wall = QtWidgets.QPushButton(self)
-        self.btn_edit_wall.setGeometry(QtCore.QRect(610, 180, 280, 60))
+        self.btn_edit_wall.setGeometry(QtCore.QRect(610, 380, 280, 60))
         self.btn_edit_wall.setText("Edit Wall")
         self.btn_edit_wall.setCheckable(True)
 
         # Edit Output 按钮
         self.btn_edit_output = QtWidgets.QPushButton(self)
-        self.btn_edit_output.setGeometry(QtCore.QRect(610, 260, 280, 60))
+        self.btn_edit_output.setGeometry(QtCore.QRect(610, 460, 280, 60))
         self.btn_edit_output.setText("Edit Output")
         self.btn_edit_output.setCheckable(True)
 
         # Check and Store 按钮
-        self.btn_check_store = QtWidgets.QPushButton(self)
-        self.btn_check_store.setGeometry(QtCore.QRect(610, 340, 280, 60))
-        self.btn_check_store.setText("Check and Store")
+        self.btn_clear = QtWidgets.QPushButton(self)
+        self.btn_clear.setGeometry(QtCore.QRect(610, 540, 280, 60))
+        self.btn_clear.setText("Clear")
 
         # Back 按钮
         self.btn_back = QtWidgets.QPushButton(self)
-        self.btn_back.setGeometry(QtCore.QRect(610, 420, 280, 60))
+        self.btn_back.setGeometry(QtCore.QRect(610, 620, 280, 60))
         self.btn_back.setText("Back")
 
         # 设置按钮样式
@@ -91,15 +109,16 @@ class FloorPlanEditorUI(QtWidgets.QWidget):
         self.lb_background.raise_()
         self.graphics_view.raise_()
         self.lb_title.raise_()
+        self.lb_tips.raise_()
         self.btn_edit_wall.raise_()
         self.btn_edit_output.raise_()
-        self.btn_check_store.raise_()
+        self.btn_clear.raise_()
         self.btn_back.raise_()
 
         # 连接信号
         self.btn_edit_wall.clicked.connect(self.on_edit_wall_clicked)
         self.btn_edit_output.clicked.connect(self.on_edit_output_clicked)
-        self.btn_check_store.clicked.connect(self.on_check_store_clicked)
+        self.btn_clear.clicked.connect(self.on_clear_clicked)  # 修改
         self.btn_back.clicked.connect(self.on_back_clicked)
 
     def _setup_button_styles(self):
@@ -144,24 +163,24 @@ class FloorPlanEditorUI(QtWidgets.QWidget):
             }
         """)
 
-        # Check and Store - 橙色
-        self.btn_check_store.setStyleSheet("""
-            QPushButton {
-                font: 75 18pt "Arial";
-                background-color: rgba(255, 149, 0, 180);
-                border: 1px solid rgba(255, 149, 0, 180);
-                border-radius: 12px;
-                color: white;
-                padding: 8px 20px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: rgba(255, 149, 0, 220);
-            }
-            QPushButton:pressed {
-                background-color: rgba(204, 119, 0, 255);
-            }
-        """)
+        # Clear - 橙色
+        self.btn_clear.setStyleSheet("""
+               QPushButton {
+                   font: 75 18pt "Arial";
+                   background-color: rgba(255, 149, 0, 180);
+                   border: 1px solid rgba(255, 149, 0, 180);
+                   border-radius: 12px;
+                   color: white;
+                   padding: 8px 20px;
+                   font-weight: bold;
+               }
+               QPushButton:hover {
+                   background-color: rgba(255, 149, 0, 220);
+               }
+               QPushButton:pressed {
+                   background-color: rgba(204, 119, 0, 255);
+               }
+           """)
 
         # Back - 红色
         self.btn_back.setStyleSheet("""
@@ -230,6 +249,21 @@ class FloorPlanEditorUI(QtWidgets.QWidget):
 
         QMessageBox.information(self, '保存成功', '地图数据已成功保存！')
         print("地图检查完成并已保存")
+
+    def on_clear_clicked(self):
+        """清空面板"""
+        reply = QMessageBox.question(
+            self,
+            '确认清空',
+            '确定要清空整个面板吗？此操作不可撤销。',
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            self.chessboard.clear_board()
+            self.interface_manager.set_board_data(None)
+            QMessageBox.information(self, '清空完成', '面板已清空！')
+            print("面板已清空")
 
     def on_back_clicked(self):
         """返回主菜单"""
