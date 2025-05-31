@@ -23,6 +23,9 @@ class InterfaceManager:
         self.board_data = None
         self.board_size = 32
 
+        # 存储模拟数据
+        self.simulation_data = None
+
         # 初始化界面
         self._setup_interfaces()
 
