@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QMessageBox, QSlider
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QBrush, QColor
 from chessboard import InteractiveChessboard
+from typing import List, Tuple, Optional
 import copy
 import numpy as np
 
@@ -13,6 +14,7 @@ class FireSimulationUI(QtWidgets.QWidget):
     def __init__(self, interface_manager):
         super().__init__()
         self.interface_manager = interface_manager
+        self.simulation_data = None # 存储模拟数据
         self.current_mode = "none"  # "start_point", "none"
         self.start_point = None  # 逃生起点 (row, col)
         self.risk_data = None  # 三维风险数据 [time][x][y]
@@ -393,7 +395,7 @@ class FireSimulationUI(QtWidgets.QWidget):
             QMessageBox.critical(self, '错误', f'风险计算时发生错误: {str(e)}')
             print(f"风险计算错误: {e}")
 
-    def _mock_calculate_fire_risk(self, matrix, start_point):
+    def _mock_calculate_fire_risk(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[List[List[float]]]:
         """模拟风险计算函数（实际使用时替换为真实函数）"""
         rows, cols = len(matrix), len(matrix[0])
         time_steps = 50  # 假设20个时间步
@@ -462,19 +464,19 @@ class FireSimulationUI(QtWidgets.QWidget):
             QMessageBox.critical(self, '错误', f'路线计算时发生错误: {str(e)}')
             print(f"路线计算错误: {e}")
 
-    def _mock_algorithm1_pathfinding(self, matrix, start_point):
+    def _mock_algorithm1_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
         """模拟算法1（A*搜索）"""
         return self._simple_pathfinding(matrix, start_point)
 
-    def _mock_algorithm2_pathfinding(self, matrix, start_point):
+    def _mock_algorithm2_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
         """模拟算法2（Dijkstra）"""
         return self._simple_pathfinding(matrix, start_point)
 
-    def _mock_algorithm3_pathfinding(self, matrix, start_point):
+    def _mock_algorithm3_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
         """模拟算法3（BFS）"""
         return self._simple_pathfinding(matrix, start_point)
 
-    def _simple_pathfinding(self, matrix, start_point):
+    def _simple_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
         """简单的路径查找算法（用于演示）"""
         from collections import deque
 
@@ -539,7 +541,7 @@ class FireSimulationUI(QtWidgets.QWidget):
 
     def _update_time_display(self):
         """更新时间显示"""
-        self.lb_time_display.setText(f"时间: {self.current_time_step} / {self.max_time_steps - 1}")
+        self.lb_time_display.setText(f"时间: {self.current_time_step+1} / {self.max_time_steps}")
 
     def _update_risk_display(self, time_step):
         """更新风险显示"""
@@ -584,13 +586,16 @@ class FireSimulationUI(QtWidgets.QWidget):
 
     def _update_route_display(self, time_step):
         """更新路线显示"""
-        # 这里可以根据时间步显示不同算法的路线
-        # 暂时显示第一个算法的路线
         if self.escape_routes and len(self.escape_routes) > 0:
             route = self.escape_routes[0]
-            if route and time_step < len(route):
-                # 显示到当前时间步的路径
-                for i in range(min(time_step + 1, len(route))):
+            if route:
+                # 如果时间步超过路线长度，显示完整路径
+                # 否则按时间步显示路径
+                max_display_step = min(time_step + 1, len(route))
+                if time_step >= len(route) - 1:
+                    max_display_step = len(route)
+
+                for i in range(max_display_step):
                     row, col = route[i]
                     if (0 <= row < self.chessboard.size and
                             0 <= col < self.chessboard.size and
@@ -600,8 +605,18 @@ class FireSimulationUI(QtWidgets.QWidget):
 
     def on_back_clicked(self):
         """返回主菜单"""
-        # 保存当前状态
+        # 保存当前状态（包含风险显示和路线）
         current_matrix = self.chessboard.get_state_matrix()
+
+        # 保存风险和路线数据到interface_manager
+        simulation_data = {
+            'risk_data': self.risk_data,
+            'escape_routes': self.escape_routes,
+            'current_time_step': self.current_time_step,
+            'max_time_steps': self.max_time_steps
+        }
+        self.interface_manager.set_simulation_data(simulation_data)
+
         self.interface_manager.set_board_data(copy.deepcopy(current_matrix))
 
         # 停止自动播放
