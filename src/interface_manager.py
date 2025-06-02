@@ -77,9 +77,9 @@ class InterfaceManager:
         if self.board_data:
             self.interfaces['fire_simulation'].load_board_data(self.board_data)
 
-        # 恢复之前的模拟数据
-        if self.simulation_data:
-            self.interfaces['fire_simulation'].load_simulation_data(self.simulation_data)
+        # # 恢复之前的模拟数据
+        # if self.simulation_data:
+        #     self.interfaces['fire_simulation'].load_simulation_data(self.simulation_data)
 
     def _switch_interface(self, interface_name):
         """切换界面"""
