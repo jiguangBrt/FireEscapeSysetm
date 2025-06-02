@@ -1,4 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtGui import QBrush, QColor
 from chessboard import InteractiveChessboard
 
 class MainMenuUI(QtWidgets.QWidget):

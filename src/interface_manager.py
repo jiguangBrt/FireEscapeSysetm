@@ -49,13 +49,17 @@ class InterfaceManager:
     def show_main_menu(self):
         """显示主菜单"""
         # 在切换到主菜单前，保存编辑器中的数据
-        if 'floor_plan_editor' in self.interfaces:
-            self.save_board_data()
+        # if 'floor_plan_editor' in self.interfaces:
+        #     self.save_board_data()
         self._switch_interface('main_menu')
 
         # 更新主菜单中的棋盘显示
         if self.board_data:
             self.interfaces['main_menu'].update_board_display(self.board_data)
+
+        # 更新主菜单中的模拟显示
+        if self.simulation_data:
+            self.interfaces['main_menu'].update_simulation_display(self.simulation_data)
 
     def show_floor_plan_editor_ui(self):
         """显示地图编辑界面"""
