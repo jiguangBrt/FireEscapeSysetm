@@ -615,7 +615,7 @@ class FireSimulationUI(QtWidgets.QWidget):
             'current_time_step': self.current_time_step,
             'max_time_steps': self.max_time_steps
         }
-        #self.interface_manager.set_simulation_data(simulation_data)
+        self.interface_manager.set_simulation_data(simulation_data)  # 取消注释这行
 
         self.interface_manager.set_board_data(copy.deepcopy(current_matrix))
 
@@ -630,3 +630,27 @@ class FireSimulationUI(QtWidgets.QWidget):
         if matrix and self.chessboard:
             self.chessboard.set_board_from_matrix(matrix)
             print("仿真界面棋盘数据已加载")
+
+    def load_simulation_data(self, simulation_data):
+        """加载模拟数据"""
+        if simulation_data:
+            self.risk_data = simulation_data.get('risk_data')
+            self.escape_routes = simulation_data.get('escape_routes')
+            self.current_time_step = simulation_data.get('current_time_step', 0)
+            self.max_time_steps = simulation_data.get('max_time_steps', 0)
+
+            # 更新UI
+            if self.max_time_steps > 0:
+                self.time_slider.setMaximum(self.max_time_steps - 1)
+                self.time_slider.setEnabled(True)
+                self.time_slider.setValue(self.current_time_step)
+                self._update_time_display()
+
+                # 更新风险和路线显示
+                if self.risk_data and self.current_time_step < len(self.risk_data):
+                    self._update_risk_display(self.current_time_step)
+
+                if self.escape_routes:
+                    self._update_route_display(self.current_time_step)
+
+            print("模拟数据已加载")

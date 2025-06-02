@@ -44,7 +44,7 @@ class InterfaceManager:
         self.stacked_widget.addWidget(self.interfaces['fire_simulation'])
 
         # 默认显示主菜单
-        #self.show_main_menu()
+        # self.show_main_menu()
 
     def show_main_menu(self):
         """显示主菜单"""
@@ -73,6 +73,10 @@ class InterfaceManager:
         if self.board_data:
             self.interfaces['fire_simulation'].load_board_data(self.board_data)
 
+        # 恢复之前的模拟数据
+        if self.simulation_data:
+            self.interfaces['fire_simulation'].load_simulation_data(self.simulation_data)
+
     def _switch_interface(self, interface_name):
         """切换界面"""
         if interface_name in self.interfaces:
@@ -94,3 +98,11 @@ class InterfaceManager:
     def set_board_data(self, data):
         """设置棋盘数据"""
         self.board_data = data
+
+    def set_simulation_data(self, data):
+        """设置模拟数据"""
+        self.simulation_data = data
+
+    def get_simulation_data(self):
+        """获取模拟数据"""
+        return self.simulation_data
