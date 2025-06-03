@@ -236,7 +236,7 @@ class InteractiveChessboard(QtCore.QObject):
                 for col in range(self.size):
                     state = matrix[row][col]
                     # 验证状态值有效性
-                    if state not in [0, 1, 2]:
+                    if state not in [0, 1, 2, 3]:
                         print(f"无效状态值 {state} 在位置 ({row}, {col})")
                         state = 0  # 默认为空地
 

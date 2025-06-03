@@ -615,7 +615,7 @@ class FireSimulationUI(QtWidgets.QWidget):
             'current_time_step': self.current_time_step,
             'max_time_steps': self.max_time_steps
         }
-        self.interface_manager.set_simulation_data(simulation_data)
+        self.interface_manager.set_simulation_data(copy.deepcopy(simulation_data))
 
         self.interface_manager.set_board_data(copy.deepcopy(current_matrix))
 
