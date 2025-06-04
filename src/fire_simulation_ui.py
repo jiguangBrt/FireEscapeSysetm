@@ -11,7 +11,6 @@ from UCS import uniform_cost_search_dynamic
 from BFS import bfs_search_dynamic
 from A_star import a_star_search_dynamic
 
-
 class FireSimulationUI(QtWidgets.QWidget):
     """火灾仿真界面"""
 
