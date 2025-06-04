@@ -6,6 +6,10 @@ from chessboard import InteractiveChessboard
 from typing import List, Tuple, Optional
 import copy
 import numpy as np
+from model_definitions import SmokeRiskPredictor
+from UCS import uniform_cost_search_dynamic
+from BFS import bfs_search_dynamic
+from A_star import a_star_search_dynamic
 
 
 class FireSimulationUI(QtWidgets.QWidget):
@@ -24,6 +28,8 @@ class FireSimulationUI(QtWidgets.QWidget):
         self.auto_play_timer = QTimer()
         self.auto_play_timer.timeout.connect(self.auto_play_step)
         self.setup_ui()
+        self.predictor=None
+
 
     def setup_ui(self):
         """设置UI界面"""
@@ -59,23 +65,23 @@ class FireSimulationUI(QtWidgets.QWidget):
         self.chessboard.set_interactive(False)
         self.chessboard.set_drag_enabled(False)
 
-        # 创建提示框
+        # 创建提示框 - 修改尺寸以容纳更多内容
         self.lb_tips = QtWidgets.QLabel(self)
-        self.lb_tips.setGeometry(QtCore.QRect(610, 200, 280, 60))
+        self.lb_tips.setGeometry(QtCore.QRect(590, 140, 330, 330))  # 增加高度
         self.lb_tips.setStyleSheet("""
-            QLabel {
-                background-color: rgba(0, 255, 255, 64);
-                border: 1px solid rgba(0, 255, 255, 64);
-                border-radius: 12px;
-                color: white;
-                padding: 10px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-        """)
-        self.lb_tips.setText("选择起点后进行风险和路线计算")
+                QLabel {
+                    background-color: rgba(0, 255, 255, 64);
+                    border: 1px solid rgba(0, 255, 255, 64);
+                    border-radius: 12px;
+                    color: white;
+                    padding: 10px;
+                    font-size: 20px;
+                    font-weight: bold;
+                }
+            """)
+        self._update_tips_display()  # 初始化提示内容
         self.lb_tips.setWordWrap(True)
-        self.lb_tips.setAlignment(QtCore.Qt.AlignCenter)
+        self.lb_tips.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
         # 时间控制滑块
         self.setup_time_slider()
@@ -105,7 +111,7 @@ class FireSimulationUI(QtWidgets.QWidget):
         """设置时间滑块"""
         # 时间滑块
         self.time_slider = QSlider(Qt.Horizontal, self)
-        self.time_slider.setGeometry(QtCore.QRect(610, 280, 280, 30))
+        self.time_slider.setGeometry(QtCore.QRect(590, 470, 330, 30))
         self.time_slider.setMinimum(0)
         self.time_slider.setMaximum(0)  # 初始为0，计算后更新
         self.time_slider.setValue(0)
@@ -151,7 +157,7 @@ class FireSimulationUI(QtWidgets.QWidget):
 
         # 时间显示标签
         self.lb_time_display = QtWidgets.QLabel(self)
-        self.lb_time_display.setGeometry(QtCore.QRect(610, 320, 280, 30))
+        self.lb_time_display.setGeometry(QtCore.QRect(610, 500, 280, 30))
         self.lb_time_display.setStyleSheet("""
             QLabel {
                 color: white;
@@ -170,7 +176,7 @@ class FireSimulationUI(QtWidgets.QWidget):
         """设置按钮"""
         # 修改起点按钮 - 粉色
         self.btn_set_start = QtWidgets.QPushButton(self)
-        self.btn_set_start.setGeometry(QtCore.QRect(610, 380, 280, 60))
+        self.btn_set_start.setGeometry(QtCore.QRect(550, 540, 200, 60))
         self.btn_set_start.setText("修改起点")
         self.btn_set_start.setCheckable(True)
         self.btn_set_start.setStyleSheet("""
@@ -194,7 +200,7 @@ class FireSimulationUI(QtWidgets.QWidget):
 
         # 风险计算按钮 - 橙色
         self.btn_calc_risk = QtWidgets.QPushButton(self)
-        self.btn_calc_risk.setGeometry(QtCore.QRect(610, 460, 280, 60))
+        self.btn_calc_risk.setGeometry(QtCore.QRect(770, 540, 200, 60))
         self.btn_calc_risk.setText("风险计算")
         self.btn_calc_risk.setStyleSheet("""
             QPushButton {
@@ -216,7 +222,7 @@ class FireSimulationUI(QtWidgets.QWidget):
 
         # 路线计算按钮 - 蓝色
         self.btn_calc_route = QtWidgets.QPushButton(self)
-        self.btn_calc_route.setGeometry(QtCore.QRect(610, 540, 280, 60))
+        self.btn_calc_route.setGeometry(QtCore.QRect(550, 620, 200, 60))
         self.btn_calc_route.setText("路线计算")
         self.btn_calc_route.setStyleSheet("""
             QPushButton {
@@ -238,7 +244,7 @@ class FireSimulationUI(QtWidgets.QWidget):
 
         # 返回按钮 - 红色
         self.btn_back = QtWidgets.QPushButton(self)
-        self.btn_back.setGeometry(QtCore.QRect(610, 620, 280, 60))
+        self.btn_back.setGeometry(QtCore.QRect(770, 620, 200, 60))
         self.btn_back.setText("返回")
         self.btn_back.setStyleSheet("""
             QPushButton {
@@ -257,6 +263,25 @@ class FireSimulationUI(QtWidgets.QWidget):
                 background-color: rgba(176, 42, 55, 255);
             }
         """)
+
+    def _update_tips_display(self):
+        """更新提示框显示内容"""
+        # 操作提示
+        operation_tip = "操作提示: 请先点击风险预测，等待地图变色后再点击路线寻找"
+
+        # 路线图例
+        legend_tip = "路线图例:\n🔵 蓝色 - UCS算法 \n🟣 紫色 - BFS算法 \n🟡 黄色 - A*算法"
+
+        # 路线统计
+        if hasattr(self, 'escape_routes') and self.escape_routes and any(route for route in self.escape_routes):
+            route1, route2, route3 = self.escape_routes
+            stats_tip = f"路线统计:\nUCS: {len(route1) if route1 else 0}步\nBFS: {len(route2) if route2 else 0}步\nA*: {len(route3) if route3 else 0}步"
+        else:
+            stats_tip = "路线统计:\n暂无路线数据"
+
+        # 组合所有提示
+        full_tip = f"{operation_tip}\n{legend_tip}\n{stats_tip}"
+        self.lb_tips.setText(full_tip)
 
     def on_set_start_clicked(self):
         """修改起点模式"""
@@ -367,13 +392,25 @@ class FireSimulationUI(QtWidgets.QWidget):
             return
 
         try:
-            # 这里调用外部py文件的风险计算函数
-            # 假设函数名为 calculate_fire_risk(matrix, start_point)
-            # 返回三维数组 [time_steps][x][y] 表示每个时间步的风险值
-
             # 示例实现（实际使用时替换为真实的函数调用）
             matrix = self.chessboard.get_state_matrix()
-            self.risk_data = self._mock_calculate_fire_risk(matrix, self.start_point)
+            for i in range(len(matrix)):
+                for j in range(len(matrix[i])):
+                    if matrix[i][j] in (2, 3):
+                        matrix[i][j] = 0
+
+            if self.predictor is None:
+                try:
+                    model_path='smoke_risk_model_complete.pth'
+                    self.predictor=SmokeRiskPredictor(model_path=model_path)
+                    print("模型加载成功")
+                except Exception as e:
+                    QMessageBox.critical(self,'模型加载失败',f'无法加载风险预测模型:{str(e)}')
+                    return
+
+            floor_plan=np.array(matrix,dtype=np.float32)
+            risk_sequence=self.predictor.predict(floor_plan)
+            self.risk_data=risk_sequence.tolist()
 
             if self.risk_data is not None:
                 self.max_time_steps = len(self.risk_data)
@@ -433,26 +470,32 @@ class FireSimulationUI(QtWidgets.QWidget):
             # 调用三个不同的搜索算法
             matrix = self.chessboard.get_state_matrix()
 
-            # 这里应该调用外部py文件的三个函数
-            # 假设函数名为：
-            # - algorithm1_pathfinding(matrix, start_point)
-            # - algorithm2_pathfinding(matrix, start_point)
-            # - algorithm3_pathfinding(matrix, start_point)
-            # 每个都返回 [(x1,y1), (x2,y2), ...] 格式的路径
+            ucs_result = uniform_cost_search_dynamic(matrix, self.risk_data, self.start_point)
+            if ucs_result:
+                cost, path = ucs_result
+                route1 = [(r, c) for t, r, c in path]
+            else:
+                route1 = []
 
-            # 示例实现（实际使用时替换为真实的函数调用）
-            route1 = self._mock_algorithm1_pathfinding(matrix, self.start_point)
-            route2 = self._mock_algorithm2_pathfinding(matrix, self.start_point)
-            route3 = self._mock_algorithm3_pathfinding(matrix, self.start_point)
+            bfs_result = bfs_search_dynamic(matrix, self.risk_data, self.start_point)
+            if bfs_result:
+                cost, path = bfs_result
+                route2 = [(r, c) for t, r, c in path]
+            else:
+                route2 = []
+
+            a_star_result = a_star_search_dynamic(matrix, self.risk_data, self.start_point)
+            if a_star_result:
+                cost, path = a_star_result
+                route3 = [(r, c) for t, r, c in path]
+            else:
+                route3 = []
 
             self.escape_routes = [route1, route2, route3]
 
             if any(route for route in self.escape_routes):
-                QMessageBox.information(self, '计算完成',
-                                        f'路线计算完成！\n'
-                                        f'算法1路径长度: {len(route1) if route1 else 0}\n'
-                                        f'算法2路径长度: {len(route2) if route2 else 0}\n'
-                                        f'算法3路径长度: {len(route3) if route3 else 0}')
+                # 更新提示框显示路线统计，而不是弹窗
+                self._update_tips_display()
 
                 # 自动播放一次时间流逝
                 self._start_auto_play()
@@ -463,18 +506,6 @@ class FireSimulationUI(QtWidgets.QWidget):
         except Exception as e:
             QMessageBox.critical(self, '错误', f'路线计算时发生错误: {str(e)}')
             print(f"路线计算错误: {e}")
-
-    def _mock_algorithm1_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
-        """模拟算法1（A*搜索）"""
-        return self._simple_pathfinding(matrix, start_point)
-
-    def _mock_algorithm2_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
-        """模拟算法2（UCS）"""
-        return self._simple_pathfinding(matrix, start_point)
-
-    def _mock_algorithm3_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
-        """模拟算法3（BFS）"""
-        return self._simple_pathfinding(matrix, start_point)
 
     def _simple_pathfinding(self, matrix: List[List[int]], start_point: Tuple[int, int]) -> List[Tuple[int, int]]:
         """简单的路径查找算法（用于演示）"""
@@ -586,22 +617,33 @@ class FireSimulationUI(QtWidgets.QWidget):
 
     def _update_route_display(self, time_step):
         """更新路线显示"""
-        if self.escape_routes and len(self.escape_routes) > 0:
-            route = self.escape_routes[0]
-            if route:
-                # 如果时间步超过路线长度，显示完整路径
-                # 否则按时间步显示路径
-                max_display_step = min(time_step + 1, len(route))
-                if time_step >= len(route) - 1:
-                    max_display_step = len(route)
+        if not self.escape_routes:
+            return
 
-                for i in range(max_display_step):
-                    row, col = route[i]
-                    if (0 <= row < self.chessboard.size and
-                            0 <= col < self.chessboard.size and
-                            self.chessboard.state_matrix[row][col] not in [1, 2, 3]):  # 不覆盖墙体、出口、起点
-                        square = self.chessboard.squares[row][col]
-                        square.setBrush(QBrush(QColor(0, 0, 255)))  # 蓝色路径
+        # 路线颜色：蓝色、紫色、黄色
+        route_colors = [
+            QColor(0, 0, 255),  # 蓝色 - UCS
+            QColor(220, 120, 255),  # 紫色 - BFS
+            QColor(255, 255, 51)  # 黄色 - A*
+        ]
+
+        for route_idx, route in enumerate(self.escape_routes):
+            if not route:
+                continue
+
+            # 如果时间步超过路线长度，显示完整路径
+            # 否则按时间步显示路径
+            max_display_step = min(time_step + 1, len(route))
+            if time_step >= len(route) - 1:
+                max_display_step = len(route)
+
+            for i in range(max_display_step):
+                row, col = route[i]
+                if (0 <= row < self.chessboard.size and
+                        0 <= col < self.chessboard.size and
+                        self.chessboard.state_matrix[row][col] not in [1, 2, 3]):  # 不覆盖墙体、出口、起点
+                    square = self.chessboard.squares[row][col]
+                    square.setBrush(QBrush(route_colors[route_idx]))
 
     def on_back_clicked(self):
         """返回主菜单"""
